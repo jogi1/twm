@@ -17,3 +17,4 @@ void hotkey_taskbar(void);
 void hotkey_code_mode(void);
 void hotkey_list_windows(void);
 int Window_Get_Taskbar(void);
+struct window *Window_Get_First(void);

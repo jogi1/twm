@@ -152,8 +152,8 @@ BOOL CALLBACK enumWindowsProc(HWND hwnd, LPARAM lparam)
 	}
 
 	printf("\n\n");
-*/
 	return 1;
+*/
 }
 
 void hotkey_taskbar(void)
@@ -299,6 +299,11 @@ int Window_Get_Taskbar(void)
 	}
 
 	return 0;
+}
+
+struct window *Window_Get_First(void)
+{
+	return windows_list;
 }
 
 
