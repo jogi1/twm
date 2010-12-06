@@ -73,7 +73,7 @@ int Rule_Check_Window(struct window *w)
 		{
 			if ((rc = Regexp_Match_String(r->class_regexp, w->class_name)) > 0)
 			{
-				printf("\"%s\" matched class and name\n");
+				printf("\"%s\" matched class and name\n", w->window_name);
 				Layout_Section_Add_Window(r->s, w);
 				return 1;
 			}

@@ -18,3 +18,8 @@ void hotkey_code_mode(void);
 void hotkey_list_windows(void);
 int Window_Get_Taskbar(void);
 struct window *Window_Get_First(void);
+int Window_Readin_Windows(void);
+int Window_Restore_Original(struct window *w);
+int Window_Set_Style(struct window *w, DWORD style);
+int Window_Set_ExStyle(struct window *w, DWORD style);
+int Window_Set_Dimensions(struct window *w, int x, int y, int width, int height, int redraw);

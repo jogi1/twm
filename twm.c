@@ -17,17 +17,35 @@ void hotkey_quit(void)
 	exit(1);
 }
 
+void hotkey_previous_window(void)
+{
+	extern struct layout *current_layout;
+	Layout_Section_Previous_Window(current_layout);
+}
+
+void hotkey_next_window(void)
+{
+	extern struct layout *current_layout;
+	Layout_Section_Next_Window(current_layout);
+}
+
+void hotkey_next_section(void)
+{
+	extern struct layout *current_layout;
+	Layout_Section_Next_Section(current_layout);
+}
+
+void hotkey_previous_section(void)
+{
+	extern struct layout *current_layout;
+	Layout_Section_Previous_Section(current_layout);
+}
+
 int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) 
 {
-	// Reading in all windows
-	EnumWindows(enumWindowsProc, 0);
 
 	// Get all the monitors
 	if (Monitor_Setup())
-		return 1;
-
-	// get the taskbar
-	if (Window_Get_Taskbar())
 		return 1;
 
 	// Initialize Layouts
@@ -38,10 +56,19 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 	if (Windows_Manager_Init())
 		return 1;
 
+	// get the taskbar
+	if (Window_Get_Taskbar())
+		return 1;
+
+
+
 	HotKey_Register("win Q", &hotkey_quit);
 	HotKey_Register("win T", &hotkey_taskbar);
-	HotKey_Register("win C", &hotkey_code_mode);
-	HotKey_Register("win W", &hotkey_list_windows);
+	HotKey_Register("ctrl win M", &hotkey_windows_manage);
+	HotKey_Register("ctrl win H", &hotkey_previous_window);
+	HotKey_Register("ctrl win J", &hotkey_previous_section);
+	HotKey_Register("ctrl win K", &hotkey_next_section);
+	HotKey_Register("ctrl win L", &hotkey_next_window);
 
 	fflush(stdout);
 

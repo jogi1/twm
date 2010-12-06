@@ -12,6 +12,8 @@
 
 struct layout *layout_list, *layout_list_last;
 
+struct layout *current_layout;
+
 static struct layout *layout_add(void)
 {
 	if (layout_list == NULL)
@@ -143,7 +145,7 @@ static struct section *section_add(struct layout *l, char *name)
 			return NULL;
 		}
 
-		for (i=0; i<l->section_count + 1; i++)
+		for (i=0; i<l->section_count; i++)
 			l->section[i] = osp[i];
 
 		free(osp);
@@ -235,7 +237,6 @@ static int add_window_to_section(struct section *s, struct window *w)
 int Layout_Section_Add_Window(struct section *s, struct window *w)
 {
 	add_window_to_section(s, w);
-
 	return 0;
 }
 
@@ -269,11 +270,182 @@ int Layout_Init(void)
 	Layout_Section_Calculate_Dimensions(s, l);
 
 
-	if(Rule_Add("terms", s, ".*", "Xming X"))
+	if(Rule_Add("terms", s, "Administrator@jogi|jogi@debian-crosscompile", "Xming X"))
 	{
 		printf("problem compiling terms regexp.\n");
 		return 1;
 	}
+
+	current_layout = l;
+
+	l = Layout_Create("irc media");
+	if (l == NULL)
+		return 1;
+
+	Layout_Set_Monitor(l, 1);
+
+	s = Layout_Add_Section(l, "irc");
+	if (s == NULL)
+		return 1;
+
+	Layout_Section_Set_Dimension_Float(s, 0, 0, 1.0f, 1.0f/3.5f);
+	Layout_Section_Calculate_Dimensions(s, l);
+
+	if (Rule_Add("irc", s, "jogi@mephhisto", "Xming X"))
+	{
+		printf("problem compiling irc regexp.\n");
+		return 1;
+	}
+
+	s = Layout_Add_Section(l, "media");
+	if (s == NULL)
+		return 1;
+
+	Layout_Section_Set_Dimension_Float(s, 0, 1.0f/3.5f, 1, 2.5f/3.5f);
+	Layout_Section_Calculate_Dimensions(s, l);
+
+	if (Rule_Add("media", s, "MPlayer", "MPlayer"))
+	{
+		printf("problem compiling media regexp.\n");
+		return 1;
+	}
+
+
+
+	return 0;
+}
+
+
+void Layout_Section_Restore_Windows(struct section *s)
+{
+	int i;
+	float f;
+
+	f = (float)s->ih/(float)s->windows_attached_count;
+
+	for (i=0; i<s->windows_attached_count; i++)
+		Window_Restore_Original(s->windows_attached[i]);
+}
+
+void Layout_Section_Setup_Windows(struct section *s)
+{
+	int i;
+	float f;
+
+	if (s == NULL)
+		return;
+
+	if (s->windows_attached == 0)
+		return;
+
+	f = (float)s->ih/(float)s->windows_attached_count;
+
+	for (i=0; i<s->windows_attached_count; i++)
+	{
+		Window_Set_Style(s->windows_attached[i], WS_POPUP | WS_VISIBLE);
+		Window_Set_Dimensions(s->windows_attached[i], s->ix, s->iy + f * i, s->iw, f, 1);
+	}
+}
+
+void Layout_Apply(void)
+{
+	struct layout *l;
+	int i;
+
+	l = layout_list;
+
+	while (l)
+	{
+		for (i=0; i<l->section_count; i++)
+			Layout_Section_Setup_Windows(l->section[i]);
+		l = l->next;
+	}
+}
+
+void Layout_Restore(void)
+{
+	struct layout *l;
+	int i;
+
+	l = layout_list;
+
+	while (l)
+	{
+		for (i=0; i<l->section_count; i++)
+			Layout_Section_Restore_Windows(l->section[i]);
+		l = l->next;
+	}
+}
+
+static void activate_section(struct section *s)
+{
+	SetForegroundWindow(s->windows_attached[s->windows_active_window]->handle);
+}
+
+int Layout_Section_Next_Section(struct layout *l)
+{
+	if (l == NULL)
+		return 1;
+
+	l->section_active++;
+
+	if (l->section_active >= l->section_count)
+		l->section_active = 0;
+
+	activate_section(l->section[l->section_active]);
+
+	return 0;
+}
+
+int Layout_Section_Previous_Section(struct layout *l)
+{
+	if (l == NULL)
+		return 1;
+
+	l->section_active--;
+
+	if (l->section_active < 0)
+		l->section_active = l->section_count - 1;
+
+	activate_section(l->section[l->section_active]);
+
+	return 0;
+}
+
+int Layout_Section_Next_Window(struct layout *l)
+{
+	struct section *s;
+
+	if (l == NULL)
+		return 1;
+
+	s = l->section[l->section_active];
+
+	s->windows_active_window++;
+
+	if (s->windows_active_window <= s->windows_attached_count)
+		s->windows_active_window = 0;
+
+	activate_section(s);
+
+	return 0;
+}
+
+int Layout_Section_Previous_Window(struct layout *l)
+{	
+	struct section *s;
+
+	if (l == NULL)
+		return 1;
+
+	s = l->section[l->section_active];
+
+	s->windows_active_window--;
+
+	if (s->windows_active_window < 0)
+		s->windows_active_window = s->windows_attached_count - 1;
+
+	activate_section(s);
 
 	return 0;
 }

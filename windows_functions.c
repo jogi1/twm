@@ -106,8 +106,12 @@ void window_setup(struct window *w, HWND hwnd, WINDOWINFO *winfo)
 
 static void window_restore(struct window *w)
 {
+	int x, y, width, height;
+
 	SetWindowLong(w->handle, GWL_STYLE, w->original_dwStyle);
 	SetWindowLong(w->handle, GWL_EXSTYLE, w->original_dwExStyle);
+	get_size_from_rect(&w->original_rcWindow, &x, &y, &width, &height);
+	MoveWindow(w->handle, x, y, width, height, 1);
 }
 
 BOOL CALLBACK enumWindowsProc(HWND hwnd, LPARAM lparam)
@@ -156,6 +160,40 @@ BOOL CALLBACK enumWindowsProc(HWND hwnd, LPARAM lparam)
 */
 }
 
+static void window_clear_list(void)
+{
+	struct window *w, *w1;
+
+	if (windows_list == NULL)
+		return;
+
+	w = windows_list;
+
+	while(w)
+	{
+		w1 = w->next;
+
+		free(w->class_name);
+		free(w->window_name);
+		free(w);
+
+		w = w1;
+	}
+}
+
+int Window_Readin_Windows(void)
+{
+	window_clear_list();
+	EnumWindows(enumWindowsProc, 0);
+	return 0;
+}
+
+int Window_Restore_Original(struct window *w)
+{
+	window_restore(w);
+	return 0;
+}
+
 void hotkey_taskbar(void)
 {
 	static int taskbar_hidden = 0;
@@ -167,6 +205,8 @@ void hotkey_taskbar(void)
 
 	taskbar_hidden = !taskbar_hidden;
 }
+
+/*
 
 void hotkey_code_mode(void)
 {
@@ -234,7 +274,6 @@ void hotkey_code_mode(void)
 	}
 	printf("-----------------------------\n");
 	fflush(stdout);
-	*/
 
 	if (code_toggle)
 	{
@@ -287,6 +326,7 @@ void hotkey_list_windows(void)
 		w = w->next;
 	}
 }
+	*/
 
 int Window_Get_Taskbar(void)
 {
@@ -306,4 +346,21 @@ struct window *Window_Get_First(void)
 	return windows_list;
 }
 
+int Window_Set_Style(struct window *w, DWORD style)
+{
+	SetWindowLong(w->handle, GWL_STYLE, style);
+	return 1;
+}
+
+int Window_Set_ExStyle(struct window *w, DWORD style)
+{
+	SetWindowLong(w->handle, GWL_EXSTYLE, style);
+	return 1;
+}
+
+int Window_Set_Dimensions(struct window *w, int x, int y, int width, int height, int redraw)
+{
+	MoveWindow(w->handle, x, y, width, height, redraw);
+	return 1;
+}
 
