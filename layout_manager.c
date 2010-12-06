@@ -423,7 +423,7 @@ int Layout_Section_Next_Window(struct layout *l)
 
 	s->windows_active_window++;
 
-	if (s->windows_active_window <= s->windows_attached_count)
+	if (s->windows_active_window >= s->windows_attached_count)
 		s->windows_active_window = 0;
 
 	activate_section(s);
