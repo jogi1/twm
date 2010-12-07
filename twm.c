@@ -41,6 +41,23 @@ void hotkey_previous_section(void)
 	Layout_Section_Previous_Section(current_layout);
 }
 
+void hotkey_next_layout(void)
+{
+	extern struct layout *current_layout;
+	printf("layout: %s\n", current_layout->name);
+	Layout_Next_Layout();
+	fflush(stdout);
+}
+
+void hotkey_prev_layout(void)
+{
+	extern struct layout *current_layout;
+	printf("layout: %s\n", current_layout->name);
+	Layout_Previous_Layout();
+	fflush(stdout);
+}
+
+
 int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) 
 {
 
@@ -69,6 +86,8 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 	HotKey_Register("ctrl win J", &hotkey_previous_section);
 	HotKey_Register("ctrl win K", &hotkey_next_section);
 	HotKey_Register("ctrl win L", &hotkey_next_window);
+	HotKey_Register("ctrl win I", &hotkey_next_layout);
+	HotKey_Register("ctrl win O", &hotkey_prev_layout);
 
 	fflush(stdout);
 

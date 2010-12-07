@@ -34,3 +34,5 @@ int Layout_Section_Next_Section(struct layout *l);
 int Layout_Section_Previous_Section(struct layout *l);
 int Layout_Section_Next_Window(struct layout *l);
 int Layout_Section_Previous_Window(struct layout *l);
+int Layout_Previous_Layout(void);
+int Layout_Next_Layout(void);

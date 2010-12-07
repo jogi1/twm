@@ -34,36 +34,35 @@ static struct rule *rule_add(void)
 	return rule_list_last;
 }
 
-int Rule_Add(char *name, struct section *s, char *name_regexp, char *class_regexp)
+struct rule *Rule_Add(char *name, char *name_regexp, char *class_regexp)
 {
 	struct rule *r;
 
 	r = rule_add();
 
 	if (r == NULL)
-		return 1;
+		return NULL;
 
-	r->s = s;
-	
 	r->name_regexp = Regexp_Compile(name_regexp);
 	if (r->name_regexp == NULL)
-		return 1;
+		return NULL;
 
 	r->class_regexp = Regexp_Compile(class_regexp);
 	if (r->class_regexp == NULL)
-		return 1;
+		return NULL;
 
 	r->name = strdup(name);
 	if (r->name == NULL)
-		return 1;
+		return NULL;
 
-	return 0;
+	return r;
 }
 
 int Rule_Check_Window(struct window *w)
 {
 	struct rule *r;
 	int rc;
+	int i;
 
 	r = rule_list;
 
@@ -74,7 +73,8 @@ int Rule_Check_Window(struct window *w)
 			if ((rc = Regexp_Match_String(r->class_regexp, w->class_name)) > 0)
 			{
 				printf("\"%s\" matched class and name\n", w->window_name);
-				Layout_Section_Add_Window(r->s, w);
+				for (i=0; i<r->section_count; i++)
+					Layout_Section_Add_Window(r->s[i], w);
 				return 1;
 			}
 		}
@@ -83,3 +83,39 @@ int Rule_Check_Window(struct window *w)
 
 	return 0;
 }
+
+int Rule_Add_Section(struct rule *r, struct section *s)
+{
+	struct section **os;
+	int i;
+
+	if (r->s == NULL)
+	{
+		r->s = calloc(1, sizeof(struct section *));
+		if (r->s == NULL)
+			return 1;
+
+		r->s[0] = s;
+	}
+	else
+	{
+		os = r->s;
+		r->s = calloc(r->section_count + 1, sizeof(struct section *));
+		if (r->s == NULL)
+		{
+			r->s = os;
+			return 1;
+		}
+		
+		for (i=0; i<r->section_count; i++)
+			r->s[i] = os[i];
+
+		r->s[i] = s;
+	}
+
+	r->section_count++;
+
+	return 0;
+}
+
+

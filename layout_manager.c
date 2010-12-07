@@ -50,7 +50,6 @@ static struct layout *layout_find_by_name (char *name)
 	return NULL;
 }
 
-
 struct layout *Layout_Create(char *name)
 {
 	struct layout *l;
@@ -244,6 +243,7 @@ int Layout_Init(void)
 {
 	struct layout *l;
 	struct section *s;
+	struct rule *r1, *r2;
 
 	l = Layout_Create("coding");
 	if (l == NULL)
@@ -256,9 +256,15 @@ int Layout_Init(void)
 	Layout_Section_Set_Dimension_Float(s, 1.0f/3.0f, 0, 2.0f/3.0f, 1);
 	Layout_Section_Calculate_Dimensions(s, l);
 
-	if(Rule_Add("vim", s, ".*GVIM", "Xming X"))
+	if((r1 = Rule_Add("vim", ".*GVIM", "Xming X")) == NULL)
 	{
 		printf("problem compiling vim regexp.\n");
+		return 1;
+	}
+
+	if (Rule_Add_Section(r1, s))
+	{
+		printf("problem attaching section to rule r1\n");
 		return 1;
 	}
 
@@ -270,13 +276,55 @@ int Layout_Init(void)
 	Layout_Section_Calculate_Dimensions(s, l);
 
 
-	if(Rule_Add("terms", s, "Administrator@jogi|jogi@debian-crosscompile", "Xming X"))
+	if((r2 = Rule_Add("terms", "Administrator@jogi|jogi@debian-crosscompile|jogi@mephhisto", "Xming X")) == NULL)
 	{
 		printf("problem compiling terms regexp.\n");
 		return 1;
 	}
 
+	if (Rule_Add_Section(r2, s))
+	{
+		printf("problem attaching section to rule r1\n");
+		return 1;
+	}
+
+
 	current_layout = l;
+
+	printf("next layout\n");
+
+	l = Layout_Create("coding1");
+	if (l == NULL)
+		return 1;
+
+	s = Layout_Add_Section(l, "vim");
+	if (s == NULL)
+		return 1;
+
+	Layout_Section_Set_Dimension_Float(s, 0, 1.0f/3.0f, 1, 2.0f/3.0f);
+	Layout_Section_Calculate_Dimensions(s, l);
+
+	if (Rule_Add_Section(r1, s))
+	{
+		printf("problem attaching section to rule r1\n");
+		return 1;
+	}
+
+
+	s = Layout_Add_Section(l, "terms");
+	if (s == NULL)
+		return;
+
+	Layout_Section_Set_Dimension_Float(s, 0, 0, 1, 1.0f/3.0f);
+	Layout_Section_Calculate_Dimensions(s, l);
+
+	if (Rule_Add_Section(r2, s))
+	{
+		printf("problem attaching section to rule r1\n");
+		return 1;
+	}
+
+	/*`
 
 	l = Layout_Create("irc media");
 	if (l == NULL)
@@ -310,6 +358,8 @@ int Layout_Init(void)
 		return 1;
 	}
 
+	*/
+
 
 
 	return 0;
@@ -327,13 +377,10 @@ void Layout_Section_Restore_Windows(struct section *s)
 		Window_Restore_Original(s->windows_attached[i]);
 }
 
-void Layout_Section_Setup_Windows(struct section *s)
+static void setup_windows_horizontal(struct section *s)
 {
-	int i;
 	float f;
-
-	if (s == NULL)
-		return;
+	int i;
 
 	if (s->windows_attached == 0)
 		return;
@@ -347,6 +394,62 @@ void Layout_Section_Setup_Windows(struct section *s)
 	}
 }
 
+static void setup_windows_vertical(struct section *s)
+{
+	float f;
+	int i;
+
+	if (s->windows_attached == 0)
+		return;
+
+	f = (float)s->iw/(float)s->windows_attached_count;
+
+	for (i=0; i<s->windows_attached_count; i++)
+	{
+		Window_Set_Style(s->windows_attached[i], WS_POPUP | WS_VISIBLE);
+		Window_Set_Dimensions(s->windows_attached[i], s->ix + f * i, s->iy, f, s->ih, 1);
+		printf("%f %f %f %f\n", s->ix + f * i, (float)s->iy, f, (float)s->ih);
+	}
+}
+
+void Layout_Section_Setup_Windows(struct section *s)
+{
+	int i;
+	float f;
+
+	if (s == NULL)
+		return;
+
+	switch (s->sort_order)
+	{
+		case 0:
+			printf("%i %i\n", s->iw, s->ih);
+			if (s->iw <= s->ih)
+			{
+				setup_windows_horizontal(s);
+			}
+			else
+			{
+				setup_windows_vertical(s);
+			}
+			return;
+		case 1:
+			setup_windows_vertical(s);
+			return;
+		case 2:
+			setup_windows_horizontal(s);
+			return;
+	}
+}
+
+static void setup_layout(struct layout *l)
+{
+	int i;
+
+	for (i=0; i<l->section_count; i++)
+		Layout_Section_Setup_Windows(l->section[i]);
+}
+
 void Layout_Apply(void)
 {
 	struct layout *l;
@@ -356,8 +459,7 @@ void Layout_Apply(void)
 
 	while (l)
 	{
-		for (i=0; i<l->section_count; i++)
-			Layout_Section_Setup_Windows(l->section[i]);
+		setup_layout(l);
 		l = l->next;
 	}
 }
@@ -379,6 +481,9 @@ void Layout_Restore(void)
 
 static void activate_section(struct section *s)
 {
+	if (s->windows_attached_count == 0)
+		return;
+
 	SetForegroundWindow(s->windows_attached[s->windows_active_window]->handle);
 }
 
@@ -446,6 +551,38 @@ int Layout_Section_Previous_Window(struct layout *l)
 		s->windows_active_window = s->windows_attached_count - 1;
 
 	activate_section(s);
+
+	return 0;
+}
+
+int Layout_Next_Layout(void)
+{
+	if (current_layout == NULL)
+		return 1;
+
+	if (current_layout->next)
+		current_layout = current_layout->next;
+	else
+		current_layout = layout_list;
+
+	setup_layout(current_layout);
+	activate_section(current_layout->section[current_layout->section_active]);
+
+	return 0;
+}
+
+int Layout_Previous_Layout(void)
+{
+	if (current_layout == NULL)
+		return 1;
+
+	if (current_layout->prev)
+		current_layout = current_layout->prev;
+	else
+		current_layout = layout_list_last;
+
+	setup_layout(current_layout);
+	activate_section(current_layout->section[current_layout->section_active]);
 
 	return 0;
 }
