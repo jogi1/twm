@@ -117,7 +117,6 @@ static void window_restore(struct window *w)
 BOOL CALLBACK enumWindowsProc(HWND hwnd, LPARAM lparam)
 {
 	struct window *w;
-
 	WINDOWINFO info;
 
 	GetWindowInfo(hwnd, &info);
@@ -260,8 +259,6 @@ void hotkey_code_mode(void)
 		return;
 	}
 
-	/*
-
 	printf("------------ %i ------------\n", code_toggle);
 	for (i=0;i<count;i++)
 	{
@@ -363,4 +360,43 @@ int Window_Set_Dimensions(struct window *w, int x, int y, int width, int height,
 	MoveWindow(w->handle, x, y, width, height, redraw);
 	return 1;
 }
+
+void Window_Add_Active(void)
+{
+	HWND hwnd;
+	WINDOWINFO info;
+	struct window *w;
+	char buffer[1024];
+
+	hwnd = GetForegroundWindow();
+
+	if (hwnd == NULL)
+	{
+		printf("no active window?\n");
+		fflush(stdout);
+		return;
+	}
+
+	w = window_add();
+
+	if (w == NULL)
+	{
+		printf("error allocating window\n");
+		fflush(stdout);
+		return;
+	}
+
+	GetWindowInfo(hwnd, &info);
+
+	if (GetWindowText(hwnd, buffer, sizeof(buffer)))
+	{
+		printf("reading in \"%s\".\n", buffer);
+		fflush(stdout);
+	}
+
+	window_setup(w, hwnd, &info);
+
+	return;
+}
+
 

@@ -245,6 +245,37 @@ int Layout_Init(void)
 	struct section *s;
 	struct rule *r1, *r2;
 
+	l = Layout_Create("pokerstars");
+	if (l == NULL)
+		return 1;
+
+	//Layout_Set_Monitor(l, 1);
+
+	s = Layout_Add_Section(l, "tables");
+	if (s == NULL)
+		return 1;
+
+	Layout_Section_Set_Dimension_Float(s, 0, 0, 1.0f, 1);
+	Layout_Section_Calculate_Dimensions(s, l);
+
+	if((r1 = Rule_Add("tables", ".*", "PokerStarsTableFrameClass")) == NULL)
+	{
+		printf("problem compiling pokerstars regexp.\n");
+		return 1;
+	}
+
+	if (Rule_Add_Section(r1, s))
+	{
+		printf("problem attaching section to rule r1\n");
+		return 1;
+	}
+
+
+	current_layout = l;
+
+
+	/*
+
 	l = Layout_Create("coding");
 	if (l == NULL)
 		return 1;
@@ -313,7 +344,7 @@ int Layout_Init(void)
 
 	s = Layout_Add_Section(l, "terms");
 	if (s == NULL)
-		return;
+		return 1;
 
 	Layout_Section_Set_Dimension_Float(s, 0, 0, 1, 1.0f/3.0f);
 	Layout_Section_Calculate_Dimensions(s, l);
@@ -323,6 +354,7 @@ int Layout_Init(void)
 		printf("problem attaching section to rule r1\n");
 		return 1;
 	}
+	*/
 
 	/*`
 
@@ -408,22 +440,68 @@ static void setup_windows_vertical(struct section *s)
 	{
 		Window_Set_Style(s->windows_attached[i], WS_POPUP | WS_VISIBLE);
 		Window_Set_Dimensions(s->windows_attached[i], s->ix + f * i, s->iy, f, s->ih, 1);
-		printf("%f %f %f %f\n", s->ix + f * i, (float)s->iy, f, (float)s->ih);
+	}
+}
+
+static void setup_windows_grid(struct section *s)
+{
+	float w,h;
+	int i, j, k, wc, hc;
+
+	if (s->windows_attached == 0)
+		return;
+
+	switch (s->windows_attached_count)
+	{
+		case 1:
+			wc = 1;
+			hc = 1;
+			break;
+		case 2:
+			wc = 2;
+			hc = 1;
+			break;
+		case 3:
+		case 4:
+			wc = 2;
+			hc = 2;
+			break;
+		case 5:
+		case 6:
+			wc = 3;
+			hc = 2;
+			break;
+		default:
+			wc = 3;
+			hc = 3;
+			break;
+	}
+
+	w = (float)s->iw/(float)wc;
+	h = (float)s->ih/(float)hc;
+
+	k = 0;
+	for (i=0; i<hc; i++)
+	{
+		for (j=0; j<wc; j++)
+		{
+			if (k >= s->windows_attached_count)
+				return;
+			Window_Set_Style(s->windows_attached[k], WS_POPUP | WS_VISIBLE);
+			Window_Set_Dimensions(s->windows_attached[k], s->ix + w * j, s->iy + h * i, w, h, 1);
+			k++;
+		}
 	}
 }
 
 void Layout_Section_Setup_Windows(struct section *s)
 {
-	int i;
-	float f;
-
 	if (s == NULL)
 		return;
 
 	switch (s->sort_order)
 	{
 		case 0:
-			printf("%i %i\n", s->iw, s->ih);
 			if (s->iw <= s->ih)
 			{
 				setup_windows_horizontal(s);
@@ -439,6 +517,9 @@ void Layout_Section_Setup_Windows(struct section *s)
 		case 2:
 			setup_windows_horizontal(s);
 			return;
+		case 3:
+			setup_windows_grid(s);
+			return;
 	}
 }
 
@@ -453,7 +534,6 @@ static void setup_layout(struct layout *l)
 void Layout_Apply(void)
 {
 	struct layout *l;
-	int i;
 
 	l = layout_list;
 
@@ -516,6 +596,43 @@ int Layout_Section_Previous_Section(struct layout *l)
 
 	return 0;
 }
+
+int Layout_Section_Next_Setup(struct layout *l)
+{
+	if (l == NULL)
+		return 1;
+
+	l->section[l->section_active]->sort_order++;
+	if (l->section[l->section_active]->sort_order > 3)
+		l->section[l->section_active]->sort_order = 0;
+
+	printf("Order: ");
+	switch (l->section[l->section_active]->sort_order)
+	{
+		case 0:
+			printf("auto");
+			break;
+		case 1:
+			printf("vertical");
+			break;
+		case 2:
+			printf("horizontal");
+			break;
+		case 3:
+			printf("grid");
+			break;
+		default:
+			printf("woops!");
+	}
+
+	printf("\n");
+	fflush(stdout);
+
+	Layout_Section_Setup_Windows(l->section[l->section_active]);
+
+	return 0;
+}
+
 
 int Layout_Section_Next_Window(struct layout *l)
 {

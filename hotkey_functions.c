@@ -72,7 +72,7 @@ static struct HotKey *hotkey_find_by_name(char *string)
 	return NULL;
 }
 
-int HotKey_Register(char *hotkey_combination, void (*function)(void))
+int HotKey_Register(char *hotkey_combination, void (*function)(void), char *function_name)
 {
 	int i;
 	struct tokenized_string *ts;
@@ -144,7 +144,7 @@ int HotKey_Register(char *hotkey_combination, void (*function)(void))
 
 	if (RegisterHotKey(NULL, hotkey_count + 1 ,  hotkey->modifiers, hotkey->key))
 	{
-		printf("hotkey_register: registered \"%s\".\n", hotkey_combination);
+		printf("hotkey_register: registered \"%s\" to \"%s\".\n", hotkey_combination, function_name);
 		hotkey->f = function;
 		hotkey_count++;
 		return 0;

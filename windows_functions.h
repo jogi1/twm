@@ -23,3 +23,4 @@ int Window_Restore_Original(struct window *w);
 int Window_Set_Style(struct window *w, DWORD style);
 int Window_Set_ExStyle(struct window *w, DWORD style);
 int Window_Set_Dimensions(struct window *w, int x, int y, int width, int height, int redraw);
+void Window_Add_Active(void);

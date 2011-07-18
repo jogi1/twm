@@ -41,10 +41,17 @@ void hotkey_previous_section(void)
 	Layout_Section_Previous_Section(current_layout);
 }
 
+void hotkey_section_setup(void)
+{
+	extern struct layout *current_layout;
+	Layout_Section_Next_Setup(current_layout);
+}
+
 void hotkey_next_layout(void)
 {
 	extern struct layout *current_layout;
-	printf("layout: %s\n", current_layout->name);
+	if (current_layout->name)
+		printf("layout: %s\n", current_layout->name);
 	Layout_Next_Layout();
 	fflush(stdout);
 }
@@ -52,7 +59,8 @@ void hotkey_next_layout(void)
 void hotkey_prev_layout(void)
 {
 	extern struct layout *current_layout;
-	printf("layout: %s\n", current_layout->name);
+	if (current_layout->name)
+		printf("layout: %s\n", current_layout->name);
 	Layout_Previous_Layout();
 	fflush(stdout);
 }
@@ -79,15 +87,17 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 
 
 
-	HotKey_Register("win Q", &hotkey_quit);
-	HotKey_Register("win T", &hotkey_taskbar);
-	HotKey_Register("ctrl win M", &hotkey_windows_manage);
-	HotKey_Register("ctrl win H", &hotkey_previous_window);
-	HotKey_Register("ctrl win J", &hotkey_previous_section);
-	HotKey_Register("ctrl win K", &hotkey_next_section);
-	HotKey_Register("ctrl win L", &hotkey_next_window);
-	HotKey_Register("ctrl win I", &hotkey_next_layout);
-	HotKey_Register("ctrl win O", &hotkey_prev_layout);
+	HotKey_Register("win Q", &hotkey_quit, "quit");
+	HotKey_Register("win T", &hotkey_taskbar, "hide taskbar");
+	HotKey_Register("ctrl win X", &Window_Add_Active, "add active window");
+	HotKey_Register("ctrl win M", &hotkey_windows_manage, "manage windows");
+	HotKey_Register("ctrl win H", &hotkey_previous_window, "previus window");
+	HotKey_Register("ctrl win J", &hotkey_previous_section, "previous section");
+	HotKey_Register("ctrl win U", &hotkey_section_setup, "section setup");
+	HotKey_Register("ctrl win K", &hotkey_next_section, "next section");
+	HotKey_Register("ctrl win L", &hotkey_next_window, "next window");
+	HotKey_Register("ctrl win I", &hotkey_next_layout, "next layout");
+	HotKey_Register("ctrl win O", &hotkey_prev_layout, "previous layout");
 
 	fflush(stdout);
 
